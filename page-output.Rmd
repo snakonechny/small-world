@@ -1,0 +1,90 @@
+---
+title: "Small World"
+author: "SN"
+date: "December 30, 2015"
+output: html_document
+---
+
+I took a trip to Ukraine recently. All the usual pleasures of transatlantic travel aside (delays, more delays, and lost luggage), I noticed something that seemed quite interesting at my  ["home" airport](https://en.wikipedia.org/wiki/Lviv_Danylo_Halytskyi_International_Airport). LWO seems like a relatively insignificant regional gateway in western Ukraine; yet, several major *global* airlines come to Lviv with varying degree of regularity and thus drive most of the traffic through this airport. On Lufthansa (my preferred method of getting home), I can hop over to Munich every day; Austrian will take me to Vienna, Turkish - to Istanbul (painfully long connections to North America, unfortunately), and, finally, LOT (might) get me to Warsaw and then to Chicago with (hopefully) minimal delays and layovers.
+
+Lviv is thus taking full advantage of the [hub-and-spook paradigm](https://en.wikipedia.org/wiki/Spoke%E2%80%93hub_distribution_paradigm) of modern aviation. One layover can get a willing paying passenger virtually anywhere in the world.
+
+So, first, if money isn't a factor, where in the world can I go from Lviv? Put differently, how small is the world for someone who lives here?
+
+We'll the [OpenFlights dataset](http://openflights.org/data.html) to tackle this and a few other questions. This data source isn't ideal, but it should do the job: I couldn't find any evidence of the routes database update after 2014, so we will be missing out on some aggressive expansion of Turkish Airlines, for instance.
+
+Second, there are actually two separate files for the routes and for the airports. At some point, we will need to combine the two, but more about that later.
+
+First, import the routes data set. Conviniently, the columns aren't named - we'll fix this also.
+
+```{r}
+data <- read.csv("routes.csv", header = F)
+colnames(data) <- c("airline", "airline.id", "origin", "origin.id", "dest", "dest.id", "codeshare", "stops", "type")
+```
+
+Just validate, let's see how many places we can get to directly from Lviv. This number should be quite low.
+
+```{r message=FALSE}
+library(dplyr)
+```
+```{r}
+data %>% group_by(origin) %>% filter(origin == "LWO") %>% summarise(outbound.count = n())
+```
+
+Even 17 destinations seems a bit inflated; during summer navigation, yes, with charter flights, maybe. After a closer look (I simply listed the destinations), indeed, the outdated dataset captures the [canned flights to Russia](http://www.bbc.com/news/world-europe-34920207) and the destinations operated by Wizzair, a lowcoster that pulled out of LWO last year. Let's clean this up a bit.
+
+We can actually get rid of all Vnukovo and Wizzair-operated flights. A hypothetical passenger can't even use these travel options out of Lviv.
+
+```{r}
+data <- data %>% filter(airline != 'WU', dest != 'VKO')
+```
+
+We can trim this data set even further by including only flights were a connection is *logically and logistically* possible. Yes, there is a flight to Laranca, but Ukraine International Airlines probably won't be able to transfer you on to another destination there. I doubt that will make too much difference, so we'll leave the data as are.
+
+Now we ought to think about the question a bit further and operationalize it, finally. A passenger can fly from Lviv to another airport and, in theory, can transfer to another flight operated out of that airport. The same could obviously happen at this second destination airport, and so on, until the final destination is reached.
+
+How many destinations, then, are available to our hypothetical PAX with one transfer?
+
+```{r}
+#create a vector of unique destinations out of Lviv
+unique.dest <- data %>% filter(origin == 'LWO') %>% distinct(dest) %>% select(dest) %>% as.matrix() %>% c()
+
+#append LWO to this list of airports
+unique.dest <- append(unique.dest, 'LWO')
+
+#now subset all the routes that originate from either LWO or any of the airports to which a connection is possible
+dest.onestop <- data %>% filter(origin %in% unique.dest)
+
+```
+
+By the looks of it there are nearly 1500 flights available to a passenger who is willing to transfer only once when flying from Lviv. How many unique airports (not necessarily cities) is that?
+
+```{r}
+dest.onestop %>% group_by(dest) %>% distinct(dest)
+```
+
+There are nearly 360 airports our hypothetical passenger can go to with only one transfer. What if they're willing to change planes twice?
+
+```{r}
+#now let's expand our list of unique destinations by including flights originating from our previous destinations (termini of a single layover)
+
+unique.two.layovers <- dest.onestop %>% distinct(dest) %>% select(dest) %>% as.matrix() %>% c()
+
+dest.twostops <- data %>% filter(origin %in% unique.two.layovers)
+
+dest.twostops %>% group_by(dest) %>% distinct(dest)
+
+```
+
+The number of unique airports one can reach with two layovers grows to some 1,850. I'd imagine the growth is exponential here. 
+
+Let's visualize this small world from Lviv.
+
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
