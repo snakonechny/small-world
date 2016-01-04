@@ -317,3 +317,5 @@ For one, I'm a bit astonished by how easy it is to get from a remote South Ameri
 More importantly, I'd like to one day take this analysis a bit further. It would be interesting, for instance, to study the impact of distance to a major transfer point (think Frankfurt, Dubai, Singapore, etc.) on accessibility to other destinations. Or I'd like to study how competition or presence of different airlines impact this accessibility. Lviv is catered by four members of Star Alliance that compete for transit traffic (this is the reason why I'm dreadfully committed to United Airlines in the US). Is this at all common? I don't know, but I'd love to find out.
 
 There's a theme here, obviously: outbound traffic could be an interesting guage for how major international carriers try to achieve competitive advantage or strategically open/maintain/shut down destinations.
+
+####[Complete code, with comments](https://github.com/snakonechny/small-world/blob/master/analysis-script.R)
